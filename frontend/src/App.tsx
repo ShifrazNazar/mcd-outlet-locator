@@ -1,5 +1,7 @@
+import OutletMap from "./components/OutletMap";
+
 function App() {
-  return <div className="text-blue-500">Hello World</div>;
+  return <OutletMap />;
 }
 
 export default App;
