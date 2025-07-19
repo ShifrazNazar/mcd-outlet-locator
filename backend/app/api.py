@@ -3,8 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import get_db, Outlet
 import json
+from chatbot import router as chatbot_router
 
 app = FastAPI()
+"""
+Main FastAPI application setup, including CORS and router registration.
+"""
 
 # Enable CORS for all origins
 app.add_middleware(
@@ -15,8 +19,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Register chatbot router
+app.include_router(chatbot_router)
+
 @app.get("/outlets")
 def get_outlets(db: Session = Depends(get_db)):
+    """
+    Get all outlets from the database.
+    """
     outlets = db.query(Outlet).all()
     return [
         {
@@ -34,6 +44,9 @@ def get_outlets(db: Session = Depends(get_db)):
 
 @app.get("/outlets/{outlet_id}")
 def get_outlet(outlet_id: int, db: Session = Depends(get_db)):
+    """
+    Get a single outlet by ID.
+    """
     outlet = db.query(Outlet).filter(Outlet.id == outlet_id).first()
     if not outlet:
         raise HTTPException(status_code=404, detail="Outlet not found")

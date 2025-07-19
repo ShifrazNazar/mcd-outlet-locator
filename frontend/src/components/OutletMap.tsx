@@ -1,23 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Circle, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useQuery } from "@tanstack/react-query";
-
-interface Outlet {
-  id: number;
-  name: string;
-  address: string;
-  operating_hours: string;
-  waze_link: string;
-  latitude: number;
-  longitude: number;
-  features: string[];
-}
+import type { LatLngExpression } from "leaflet";
+import ChatSearchBox from "./ChatSearchBox";
 
 const RADIUS_METERS = 5000;
 
-// Custom marker icons
 const blueIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconSize: [25, 41],
@@ -36,37 +26,39 @@ const redIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-function haversineDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-) {
+export type Outlet = {
+  id: number;
+  name: string;
+  address: string;
+  operating_hours: string;
+  waze_link: string;
+  latitude: number;
+  longitude: number;
+  features: string[];
+};
+
+function haversineDistance(a: Outlet, b: Outlet): number {
   const toRad = (x: number) => (x * Math.PI) / 180;
-  const R = 6371000; // meters
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
+  const R = 6371000;
+  const dLat = toRad(b.latitude - a.latitude);
+  const dLon = toRad(b.longitude - a.longitude);
+  const lat1 = toRad(a.latitude);
+  const lat2 = toRad(b.latitude);
+  const c =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return R * 2 * Math.atan2(Math.sqrt(c), Math.sqrt(1 - c));
 }
 
-const OutletMap: React.FC = () => {
+export default function OutletMap() {
   const [intersectingIds, setIntersectingIds] = useState<Set<number>>(
     new Set()
   );
+  const [chatbotResults, setChatbotResults] = useState<Outlet[] | null>(null);
+  const [chatbotLoading, setChatbotLoading] = useState(false);
+  const [chatbotError, setChatbotError] = useState<string | null>(null);
 
-  const {
-    data: outlets = [],
-    isLoading,
-    isError,
-    error,
-  } = useQuery<Outlet[], Error>({
+  const { data: outlets = [] } = useQuery<Outlet[]>({
     queryKey: ["outlets"],
     queryFn: async () => {
       const res = await fetch("http://localhost:8000/outlets");
@@ -75,20 +67,24 @@ const OutletMap: React.FC = () => {
     },
   });
 
+  const currentOutlets: Outlet[] = chatbotResults ?? outlets;
+
   useEffect(() => {
-    // Find intersecting outlets
+    if (!currentOutlets.length) {
+      setIntersectingIds(new Set());
+      return;
+    }
     const intersecting = new Set<number>();
-    for (let i = 0; i < outlets.length; i++) {
-      for (let j = i + 1; j < outlets.length; j++) {
-        const a = outlets[i];
-        const b = outlets[j];
+    for (let i = 0; i < currentOutlets.length; i++) {
+      for (let j = i + 1; j < currentOutlets.length; j++) {
+        const a = currentOutlets[i],
+          b = currentOutlets[j];
         if (
           a.latitude &&
           a.longitude &&
           b.latitude &&
           b.longitude &&
-          haversineDistance(a.latitude, a.longitude, b.latitude, b.longitude) <=
-            RADIUS_METERS * 2
+          haversineDistance(a, b) <= RADIUS_METERS * 2
         ) {
           intersecting.add(a.id);
           intersecting.add(b.id);
@@ -96,62 +92,69 @@ const OutletMap: React.FC = () => {
       }
     }
     setIntersectingIds(intersecting);
-  }, [outlets]);
+  }, [currentOutlets]);
 
-  // Center map on KL if possible
-  const center = outlets.length
-    ? [outlets[0].latitude, outlets[0].longitude]
-    : [3.139, 101.6869]; // Default: Kuala Lumpur
-
-  if (isLoading) return <div>Loading outlets...</div>;
-  if (isError) return <div>Error: {error?.message}</div>;
+  const center: LatLngExpression = currentOutlets.length
+    ? [currentOutlets[0].latitude, currentOutlets[0].longitude]
+    : [3.139, 101.6869];
 
   return (
-    <MapContainer
-      center={center as [number, number]}
-      zoom={12}
-      style={{ height: "100vh", width: "100%" }}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+    <div className="h-screen w-full relative">
+      <ChatSearchBox
+        setChatbotResults={setChatbotResults}
+        setChatbotError={setChatbotError}
+        chatbotLoading={chatbotLoading}
+        setChatbotLoading={setChatbotLoading}
+        chatbotError={chatbotError}
       />
-      {outlets.map((outlet) =>
-        outlet.latitude && outlet.longitude ? (
-          <React.Fragment key={outlet.id}>
-            <Circle
-              center={[outlet.latitude, outlet.longitude]}
-              radius={RADIUS_METERS}
-              pathOptions={{
-                color: intersectingIds.has(outlet.id) ? "red" : "blue",
-                fillOpacity: 0.075,
-              }}
-            />
-            <Marker
-              position={[outlet.latitude, outlet.longitude]}
-              icon={intersectingIds.has(outlet.id) ? redIcon : blueIcon}
-            >
-              <Popup>
-                <strong>{outlet.name}</strong>
-                <br />
-                {outlet.address}
-                <br />
-                {outlet.operating_hours}
-                <br />
-                <a
-                  href={outlet.waze_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Waze
-                </a>
-              </Popup>
-            </Marker>
-          </React.Fragment>
-        ) : null
+      {chatbotError && (
+        <div
+          className="absolute left-1/2 -translate-x-1/2 z-[1000] bg-white p-2 rounded shadow text-red-700 font-medium mt-2"
+          style={{ top: 70 }}
+        >
+          {chatbotError}
+        </div>
       )}
-    </MapContainer>
+      <MapContainer center={center} zoom={12} className="h-screen w-full">
+        <TileLayer
+          attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {currentOutlets.map((outlet: Outlet) =>
+          outlet.latitude && outlet.longitude ? (
+            <React.Fragment key={outlet.id}>
+              <Circle
+                center={[outlet.latitude, outlet.longitude]}
+                radius={RADIUS_METERS}
+                pathOptions={{
+                  color: intersectingIds.has(outlet.id) ? "red" : "blue",
+                  fillOpacity: 0.075,
+                }}
+              />
+              <Marker
+                position={[outlet.latitude, outlet.longitude]}
+                icon={intersectingIds.has(outlet.id) ? redIcon : blueIcon}
+              >
+                <Popup>
+                  <strong>{outlet.name}</strong>
+                  <br />
+                  {outlet.address}
+                  <br />
+                  {outlet.operating_hours}
+                  <br />
+                  <a
+                    href={outlet.waze_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Waze
+                  </a>
+                </Popup>
+              </Marker>
+            </React.Fragment>
+          ) : null
+        )}
+      </MapContainer>
+    </div>
   );
-};
-
-export default OutletMap;
+}
