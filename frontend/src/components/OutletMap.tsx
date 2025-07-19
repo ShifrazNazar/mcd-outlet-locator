@@ -61,7 +61,7 @@ export default function OutletMap() {
   const { data: outlets = [] } = useQuery<Outlet[]>({
     queryKey: ["outlets"],
     queryFn: async () => {
-      const res = await fetch("http://localhost:8000/outlets");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/outlets`);
       if (!res.ok) throw new Error("Failed to fetch outlets");
       return res.json();
     },

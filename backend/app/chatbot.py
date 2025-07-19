@@ -4,7 +4,7 @@ import json
 from typing import List
 from fastapi import APIRouter, HTTPException, Request, Depends
 from sqlalchemy.orm import Session
-from database import get_db, Outlet
+from .database import get_db, Outlet
 from google import genai
 
 router = APIRouter()

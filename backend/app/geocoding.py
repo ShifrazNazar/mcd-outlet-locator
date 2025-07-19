@@ -1,5 +1,5 @@
 import requests
-from database import SessionLocal, Outlet
+from .database import SessionLocal, Outlet
 import time
 
 def geocode_address(address):
