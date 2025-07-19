@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Circle, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { useQuery } from "@tanstack/react-query";
 
 interface Outlet {
   id: number;
@@ -56,16 +57,23 @@ function haversineDistance(
 }
 
 const OutletMap: React.FC = () => {
-  const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [intersectingIds, setIntersectingIds] = useState<Set<number>>(
     new Set()
   );
 
-  useEffect(() => {
-    fetch("http://localhost:8000/outlets")
-      .then((res) => res.json())
-      .then((data) => setOutlets(data));
-  }, []);
+  const {
+    data: outlets = [],
+    isLoading,
+    isError,
+    error,
+  } = useQuery<Outlet[], Error>({
+    queryKey: ["outlets"],
+    queryFn: async () => {
+      const res = await fetch("http://localhost:8000/outlets");
+      if (!res.ok) throw new Error("Failed to fetch outlets");
+      return res.json();
+    },
+  });
 
   useEffect(() => {
     // Find intersecting outlets
@@ -94,6 +102,9 @@ const OutletMap: React.FC = () => {
   const center = outlets.length
     ? [outlets[0].latitude, outlets[0].longitude]
     : [3.139, 101.6869]; // Default: Kuala Lumpur
+
+  if (isLoading) return <div>Loading outlets...</div>;
+  if (isError) return <div>Error: {error?.message}</div>;
 
   return (
     <MapContainer
