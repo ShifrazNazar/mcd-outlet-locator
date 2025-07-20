@@ -22,6 +22,37 @@ KNOWN_FEATURES = [
     "WiFi"
 ]
 
+def extract_features_simple(query: str) -> List[str]:
+    """
+    Simple keyword-based feature extraction as fallback when Gemini is not available.
+    """
+    query_lower = query.lower()
+    matched_features = []
+    
+    # Simple keyword matching
+    if "24" in query_lower or "hour" in query_lower:
+        matched_features.append("24 Hours")
+    if "birthday" in query_lower or "party" in query_lower:
+        matched_features.append("Birthday Party")
+    if "breakfast" in query_lower:
+        matched_features.append("Breakfast")
+    if "cashless" in query_lower or "card" in query_lower or "payment" in query_lower:
+        matched_features.append("Cashless Facility")
+    if "dessert" in query_lower:
+        matched_features.append("Dessert Center")
+    if "kiosk" in query_lower or "digital" in query_lower:
+        matched_features.append("Digital Order Kiosk")
+    if "drive" in query_lower or "thru" in query_lower:
+        matched_features.append("Drive-Thru")
+    if "cafe" in query_lower or "coffee" in query_lower:
+        matched_features.append("McCafe")
+    if "delivery" in query_lower:
+        matched_features.append("McDelivery")
+    if "wifi" in query_lower or "internet" in query_lower:
+        matched_features.append("WiFi")
+    
+    return matched_features
+
 def extract_features_with_gemini(query: str) -> List[str]:
     """
     Use Gemini LLM to extract relevant features from a user query.
@@ -29,9 +60,12 @@ def extract_features_with_gemini(query: str) -> List[str]:
     """
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        raise RuntimeError("GEMINI_API_KEY environment variable not set")
-    client = genai.Client(api_key=api_key)
-    prompt = f"""
+        print("[Gemini LLM] Warning: GEMINI_API_KEY not set, using fallback search")
+        return extract_features_simple(query)
+    
+    try:
+        client = genai.Client(api_key=api_key)
+        prompt = f"""
 You are an assistant for a McDonald's outlet search. Given a user query, extract which of the following features are being asked about (if any):
 {', '.join(KNOWN_FEATURES)}
 
@@ -39,7 +73,6 @@ User query: '{query}'
 
 Return a JSON array of the relevant features from the list above that match the user's intent. Only include features from the list. If none match, return an empty array.
 """
-    try:
         print("[Gemini LLM] Input prompt:")
         print(prompt)
         response = client.models.generate_content(
@@ -50,7 +83,7 @@ Return a JSON array of the relevant features from the list above that match the 
         print(response)
         text = getattr(response, 'text', None)
         if not text:
-            return []
+            return extract_features_simple(query)
         print("[Gemini LLM] Response text:")
         print(text)
         match = re.search(r'\[.*?\]', text, re.DOTALL)
@@ -58,10 +91,10 @@ Return a JSON array of the relevant features from the list above that match the 
             features = json.loads(match.group(0))
             if isinstance(features, list):
                 return [f for f in features if f in KNOWN_FEATURES]
-        return []
+        return extract_features_simple(query)
     except Exception as e:
         print(f"[Gemini LLM] Error: {e}")
-        return []
+        return extract_features_simple(query)
 
 def get_outlets_by_features(db: Session, features: List[str]) -> List[dict]:
     """
@@ -71,7 +104,17 @@ def get_outlets_by_features(db: Session, features: List[str]) -> List[dict]:
     outlets = db.query(Outlet).all()
     result = []
     for o in outlets:
-        outlet_features = json.loads(o.features) if o.features else []
+        try:
+            outlet_features = json.loads(o.features) if o.features else []
+        except json.JSONDecodeError:
+            # Handle malformed JSON by trying to extract features manually
+            if o.features:
+                # Remove quotes and braces, split by comma
+                features_str = o.features.replace('"', '').replace('{', '').replace('}', '')
+                outlet_features = [f.strip() for f in features_str.split(',') if f.strip()]
+            else:
+                outlet_features = []
+        
         if any(f in outlet_features for f in features):
             result.append({
                 "id": o.id,
@@ -91,18 +134,22 @@ async def chatbot_search(request: Request, db: Session = Depends(get_db)):
     Chatbot endpoint: Accepts a user query, extracts features using Gemini LLM,
     and returns outlets matching those features.
     """
-    data = await request.json()
-    query = data.get("query", "")
-    print(f"[Chatbot] Incoming query: {query}")
-    if not query:
-        raise HTTPException(status_code=400, detail="Query is required")
+    try:
+        data = await request.json()
+        query = data.get("query", "")
+        print(f"[Chatbot] Incoming query: {query}")
+        if not query:
+            raise HTTPException(status_code=400, detail="Query is required")
 
-    features = extract_features_with_gemini(query)
-    print(f"[Chatbot] Extracted features: {features}")
-    if features:
-        result = get_outlets_by_features(db, features)
-        print(f"[Chatbot] Matching outlets: {len(result)}")
-        return {"outlets": result, "matched_features": features, "source": "llm"}
-    else:
-        print("[Chatbot] No features matched. Returning empty result.")
-        return {"outlets": [], "matched_features": [], "source": "llm"}
+        features = extract_features_with_gemini(query)
+        print(f"[Chatbot] Extracted features: {features}")
+        if features:
+            result = get_outlets_by_features(db, features)
+            print(f"[Chatbot] Matching outlets: {len(result)}")
+            return {"outlets": result, "matched_features": features, "source": "llm"}
+        else:
+            print("[Chatbot] No features matched. Returning empty result.")
+            return {"outlets": [], "matched_features": [], "source": "llm"}
+    except Exception as e:
+        print(f"[Chatbot] Error: {e}")
+        return {"outlets": [], "matched_features": [], "source": "error", "error": str(e)}
