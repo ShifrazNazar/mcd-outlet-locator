@@ -1,69 +1,58 @@
-# React + TypeScript + Vite
+# Frontend: McDonald's Outlet Locator
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Overview
 
-Currently, two official plugins are available:
+This frontend visualizes McDonald's outlets in Kuala Lumpur on a map, with advanced search and chatbot features, using data from the backend API.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Setup Instructions
 
-## Expanding the ESLint configuration
+1. **Navigate to the frontend directory:**
+   ```sh
+   cd frontend
+   ```
+2. **Install dependencies:**
+   ```sh
+   yarn install
+   # or
+   npm install
+   ```
+3. **Set up environment variables:**
+   - Create a `.env` file in `frontend/` with:
+     ```
+     VITE_API_URL=http://localhost:8000
+     ```
+4. **Run the frontend dev server:**
+   ```sh
+   yarn dev
+   # or
+   npm run dev
+   ```
+   The app will be available at `http://localhost:5173`.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Features
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- **Map Visualization:** All outlets shown as markers with 5KM radius circles.
+- **Intersection Highlighting:** Outlets with overlapping 5KM radii are shown in red.
+- **Chatbot Search:** Use the search box to find outlets by features (e.g., "24 hours", "birthday party").
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+## Chatbot Examples
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- **Which outlets in KL operate 24 hours?**
+- **Which outlet allows birthday parties?**
+- **Show outlets with drive-thru.**
+- **Where can I get breakfast in KL?**
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Environment Variables
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- `VITE_API_URL` (required): URL of the backend API.
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Dependencies
+
+See `package.json` for full list. Key packages:
+
+- react, react-dom, react-query, react-leaflet, leaflet, react-hook-form, tailwindcss
+
+## Notes
+
+- **No API keys or secrets are committed to the repository.**
+- **Tested on Node 18+ and modern browsers.**

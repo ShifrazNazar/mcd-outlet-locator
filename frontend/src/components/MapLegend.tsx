@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function MapLegend() {
   return (
     <div className="absolute bottom-6 left-6 z-[1100] bg-white/95 rounded-lg shadow p-4 flex flex-col gap-2 min-w-[220px] border border-gray-200">
