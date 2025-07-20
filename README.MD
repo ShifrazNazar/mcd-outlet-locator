@@ -1,4 +1,4 @@
-# MindHive Technical Assessment: McDonald's Outlet Locator
+# McDonald's Outlet Locator
 
 ## Project Overview
 
