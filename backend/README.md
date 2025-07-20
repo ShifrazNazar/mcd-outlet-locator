@@ -11,7 +11,6 @@ This backend scrapes McDonald's outlets in Kuala Lumpur, stores them in a databa
 The backend is organized using a **Layered Architecture** for maintainability and scalability:
 
 - **main.py**: Entrypoint for running the server (with Uvicorn).
-- **api.py**: Assembles the FastAPI app, configures middleware, and includes routers.
 - **database.py**: Sets up the database engine, session, and DB utilities.
 - **models/**: Contains SQLAlchemy models (e.g., `models/outlet.py`).
 - **repositories/**: Data access layer (e.g., `repositories/outlet_repository.py`).
@@ -25,7 +24,6 @@ The backend is organized using a **Layered Architecture** for maintainability an
 ```
 backend/app/
   main.py           # Entrypoint (runs the server)
-  api.py            # FastAPI app, routers, middleware
   database.py       # DB engine/session/utilities
   models/
     outlet.py       # SQLAlchemy Outlet model
@@ -37,10 +35,9 @@ backend/app/
   api/
     outlet.py       # Outlet API endpoints
     chatbot.py      # Chatbot API endpoint
-    __init__.py     # Router includes
+    __init__.py     # FastAPI app, routers
   scraper.py        # Web scraper for outlets
   geocoding.py      # Geocoding script
-  migration_script.py # SQLite to PostgreSQL migration
 ```
 
 ---
@@ -69,12 +66,7 @@ backend/app/
      # DATABASE_URL=sqlite:///outlets.db
      GEMINI_API_KEY=your_gemini_api_key  # (optional, for chatbot LLM)
      ```
-5. **Initialize the database:**
-   ```sh
-   python -m app.main
-   ```
-   This will create tables and verify the connection.
-6. **Run the backend server:**
+5. **Run the backend server:**
    ```sh
    uvicorn app.main:app --reload
    ```
