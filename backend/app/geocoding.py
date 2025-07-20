@@ -1,5 +1,6 @@
 import requests
-from .database import SessionLocal, Outlet
+from .database import SessionLocal
+from .models.outlet import Outlet
 import time
 
 def geocode_address(address):

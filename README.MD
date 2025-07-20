@@ -19,3 +19,8 @@ This project scrapes McDonald's outlets in Kuala Lumpur, stores them in a databa
 
 - **Backend:** See [`backend/README.md`](backend/README.md) for setup, usage, and API details.
 - **Frontend:** See [`frontend/README.md`](frontend/README.md) for setup, usage, and features.
+
+## Live Demo
+
+- Frontend: https://mcd-outlet-locator.vercel.app
+- Backend API: https://mcd-outlet-locator.onrender.com/docs#/default

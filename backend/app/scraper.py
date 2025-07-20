@@ -7,7 +7,8 @@ from selenium.webdriver.common.keys import Keys
 from bs4 import BeautifulSoup
 import time
 import re
-from database import SessionLocal, Outlet, create_tables
+from .database import SessionLocal, create_tables
+from .models.outlet import Outlet
 
 class McDonaldsScraper:
     def __init__(self):
