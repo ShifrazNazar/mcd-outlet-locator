@@ -19,3 +19,4 @@ urllib3==1.26.15
 uvicorn==0.21.1
 python-dotenv
 google-genai
+psycopg2-binary
