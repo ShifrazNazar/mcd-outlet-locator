@@ -5,6 +5,7 @@ import "leaflet/dist/leaflet.css";
 import { useQuery } from "@tanstack/react-query";
 import type { LatLngExpression } from "leaflet";
 import ChatSearchBox from "./ChatSearchBox";
+import MapLegend from "./MapLegend";
 
 const RADIUS_METERS = 5000;
 
@@ -107,6 +108,7 @@ export default function OutletMap() {
         setChatbotLoading={setChatbotLoading}
         chatbotError={chatbotError}
       />
+      <MapLegend />
       {chatbotError && (
         <div
           className="absolute left-1/2 -translate-x-1/2 z-[1000] bg-white p-2 rounded shadow text-red-700 font-medium mt-2"

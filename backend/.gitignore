@@ -8,6 +8,7 @@ __pycache__/
 
 # scraper file body
 index.html
+migration_script.py
 
 # Distribution / packaging
 .Python
